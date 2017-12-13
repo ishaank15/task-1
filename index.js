@@ -8,9 +8,6 @@ const waterfall = require('async/waterfall');
 mongoose.connect('mongodb://localhost:27017/task1');
 
 const company = mongoose.model('companies', companySchema);
-// company.create(dummyData, function () {
-//     mongoose.disconnect();
-// });
 
 function cleanCompany(callback) {
     //Step 1: Clean the mongo collection attached to above schema
@@ -18,19 +15,19 @@ function cleanCompany(callback) {
       .then(function () {
         callback(null);
       })
-      .catch(err => console.log(err))
+      .catch(err => callback(err))
     
 }
-function insertDummy(callback) {
+function insertDummyCompanies(callback) {
     //Step 2: Insert dummy data in above collection
     company.insertMany(dummyData)
       .then(function() {
           callback(null);
       })
-      .catch(err=> console.log(err))
+      .catch(err=> callback(err))
     
 }
-function writeAllcompany(callback) {
+function writeAllCompany(callback) {
 
   company.find({})
     .then(function(company) {
@@ -40,30 +37,37 @@ function writeAllcompany(callback) {
             callback(null);
           });
     })
-      .catch(err => console.log(err))
+      .catch(err => callback(err))
    
 }
 function writePublicCompany(callback) {
-    company.find( { isPublic: "true" } ) 
+    company.find({ isPublic: "true" }) 
         .then(function( company ) {
             fs.writeFile('publicCompany.json', JSON.stringify(company), (err) => {
                 if (err) throw err;
                 console.log('publicCompany.json file has been saved!');
-                 callback(null,'Done,Now Cleaning the collection');
+                callback(null);
             });
         })
-        .catch(err => console.log(err))
+        .catch(err => callback(err))
  }
 
 
 const init = () => {
-    waterfall( [cleanCompany, insertDummy,writeAllcompany,writePublicCompany],
-        function (err, result) {
-            company.count((err, companyCount) => {
-                console.log(companyCount)
-                company.remove({}, () => mongoose.disconnect());
-            })
-        //command to Clean the collection and log the number of documents present in collection
+    waterfall([
+        cleanCompany,
+        insertDummyCompanies,
+        writeAllCompany,
+        writePublicCompany
+    ], (err, result) => {
+        if (err) {
+            console.log(err);
+            return false;
+        }
+        return company.count((err, companyCount) => {
+            console.log(companyCount)
+            return company.remove({}, () => mongoose.disconnect());
+        })
     });
 };
 
