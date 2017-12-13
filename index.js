@@ -8,7 +8,11 @@ const waterfall = require('async/waterfall');
 mongoose.connect('mongodb://localhost:27017/task1');
 
 const company = mongoose.model('companies', companySchema);
-
+ const project = {
+    name: 'Abc2',
+    clientName: 'Xyz2',
+    projectManager: 'Lmn2'
+}
 function cleanCompany(callback) {
     //Step 1: Clean the mongo collection attached to above schema
     company.remove({})
@@ -52,12 +56,28 @@ function writePublicCompany(callback) {
         .catch(err => callback(err))
  }
 
+ const updatePublicCompany = (callback) => {
+    company.update({ isPublic: "true" }, {
+        $set: {
+            'projects': project
+        }
+    }, { multi: true })
+     .then((result)=> {
+        callback(null);
+    })
+    .catch(err=> callback(err))
+
+
+};
+
 
 const init = () => {
     waterfall([
         cleanCompany,
         insertDummyCompanies,
         writeAllCompany,
+        writePublicCompany,
+        updatePublicCompany,
         writePublicCompany
     ], (err, result) => {
         if (err) {
@@ -72,3 +92,6 @@ const init = () => {
 };
 
 init();
+
+
+
